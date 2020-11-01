@@ -20,11 +20,10 @@ public class StressyModelTraining {
 
     static double[][][] getData(){
 
-        int timeStep = 5;
-        int feature = 6;
+        double[][][] data_all = new double[4014][5][6];
 
-        double[][][] data_all = new double[4014][timeStep][feature];
         try{
+            System.out.println("fileread");
             File file = new File("src/main/resources/trainingData_all.csv");
             InputStreamReader is = new InputStreamReader(new FileInputStream(file));
             BufferedReader reader = new BufferedReader(is);
@@ -33,20 +32,29 @@ public class StressyModelTraining {
 
             for (int i =0; i < 4014 ; i++){ //i=4014
                 record = read.readNext();
-                double[][] coroutine_array = new double[timeStep][feature];
-                for (int j = 0 ; j < timeStep; j++){//1,5,6
+                double[][] coroutine_array = new double[5][6];
+                for (int j = 0 ; j < 5; j++){//1,5,6
+//                    System.out.println(record[j]);
                     String[] attributes = record[j].replace("[","").replace("]","").split(",");
-                    double[] att_array = new double[feature];
-                    for(int k = 0 ; k < feature; k++){
-                        coroutine_array[j][k] = Double.parseDouble(attributes[j].trim());
+//                    System.out.println(attributes[5]);
+                    for(int k = 0 ; k < 6; k++) {
+                        coroutine_array[j][k] = Double.parseDouble(attributes[k].trim());
                     }
                 }
                 data_all[i] = coroutine_array;
+
+                //
+//                for(double[] item: coroutine_array){
+//                    for (double item2: item) {
+//                        System.out.print(item2 + " ");
+//                    }
+//                    System.out.println("");
+//                }
             }
         }catch (IOException e){
             e.printStackTrace();
         }
-        System.out.println(data_all.length);
+
         return data_all;
     }
 
@@ -88,7 +96,7 @@ public class StressyModelTraining {
         INDArray data_reshape_ind = data_ind.reshape(4014, 30);
         INDArray label_ind = Nd4j.create(label_array);
         INDArray label_reshape_ind = label_ind.reshape(4014, 4);
-        System.out.println(data_ind);
+//        System.out.println(data_ind);
         double min = 0;
         double max = 0;
         for (int i = 0; i < 4014; i++) {
@@ -98,21 +106,23 @@ public class StressyModelTraining {
             }
         }
         System.out.println(max + " " + min);
-        INDArray normalized_data = data_reshape_ind.add(min * (-1)).mul(2).div(max - min).add(-1);
-        System.out.println(normalized_data);
+        INDArray normalized_data = data_reshape_ind.add(min * (-1)).div(max - min);
+//        System.out.println(normalized_data);
 
         DataSet allData = new DataSet(normalized_data, label_reshape_ind);
 
-        File locationToLoad = new File("res/model/stressy_model.zip");
+        File locationToLoad = new File("src/main/resources/stressy_model_nn.zip");
         MultiLayerNetwork model = ModelSerializer.restoreMultiLayerNetwork(locationToLoad, false);
         model.init();
         model.setListeners(new ScoreIterationListener(1000));
 
         Evaluation eval = new Evaluation(4);
 
-        double last_accuracy = 0.15;
+        double last_accuracy = 0.5;
 
         while (true) {
+
+            allData.shuffle();
 
             SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.8);
             DataSet trainData = testAndTrain.getTrain();
@@ -121,18 +131,21 @@ public class StressyModelTraining {
             DataSetIterator train_iter = new ExistingDataSetIterator(trainData);
             DataSetIterator test_iter = new ExistingDataSetIterator(testData);
 
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < 10; i++) {
                 while (train_iter.hasNext()) {
-                    model.fit(train_iter.next());
+                    DataSet nextData = train_iter.next();
+                    INDArray reshapedFeatures = nextData.getFeatures().reshape(1, 30);
+
+                    model.fit(new DataSet(reshapedFeatures, nextData.getLabels()));
                 }
 
                 while (test_iter.hasNext()) {
 
                     DataSet nextData = test_iter.next();
-//                INDArray reshapedFeatures = nextData.getFeatures().reshape(1, 30);
+                    INDArray reshapedFeatures = nextData.getFeatures().reshape(1, 30);
 //                INDArray reshapedLabels = nextData.getLabels();
 
-                    INDArray output = model.output(nextData.getFeatures());
+                    INDArray output = model.output(nextData.getFeatures().reshape(1, 30));
                     eval.eval(nextData.getLabels(), output);
 //                eval.eval(output, reshapedLabels);
                 }
@@ -143,9 +156,9 @@ public class StressyModelTraining {
                 test_iter.reset();
             }
 
-            if (eval.accuracy() >= last_accuracy) {
+            if (eval.accuracy() > last_accuracy) {
                 boolean saveUpdate = true;
-                File locationToSave = new File("res/model/stressy_model.zip");
+                File locationToSave = new File("src/main/resources/stressy_model_nn.zip");
                 ModelSerializer.writeModel(model, locationToSave, saveUpdate);
                 last_accuracy = eval.accuracy();
 
