@@ -192,6 +192,7 @@ public class StressyModel2 {
                 INDArray reshapedLabels = nextData.getLabels().reshape(1, 4);
                 model.fit(new DataSet(reshapedFeatures, reshapedLabels));
             }
+//            model.fit(train_iter);
 
             while (test_iter.hasNext()) {
                 DataSet nextData = test_iter.next();

@@ -114,11 +114,11 @@ public class StressyModelTraining {
         File locationToLoad = new File("src/main/resources/stressy_model_nn.zip");
         MultiLayerNetwork model = ModelSerializer.restoreMultiLayerNetwork(locationToLoad, false);
         model.init();
-        model.setListeners(new ScoreIterationListener(1000));
+//        model.setListeners(new ScoreIterationListener(1000));
 
         Evaluation eval = new Evaluation(4);
 
-        double last_accuracy = 0.5;
+        double last_accuracy = 0.3;
 
         while (true) {
 
@@ -131,12 +131,16 @@ public class StressyModelTraining {
             DataSetIterator train_iter = new ExistingDataSetIterator(trainData);
             DataSetIterator test_iter = new ExistingDataSetIterator(testData);
 
+            int train_idx = 0;
+            int test_idx = 0;
+
             for (int i = 0; i < 10; i++) {
                 while (train_iter.hasNext()) {
                     DataSet nextData = train_iter.next();
                     INDArray reshapedFeatures = nextData.getFeatures().reshape(1, 30);
 
                     model.fit(new DataSet(reshapedFeatures, nextData.getLabels()));
+                    train_idx++;
                 }
 
                 while (test_iter.hasNext()) {
@@ -148,9 +152,11 @@ public class StressyModelTraining {
                     INDArray output = model.output(nextData.getFeatures().reshape(1, 30));
                     eval.eval(nextData.getLabels(), output);
 //                eval.eval(output, reshapedLabels);
+                    test_idx++;
                 }
 
                 System.out.println(eval.stats());
+                System.out.println(train_idx + " " + test_idx);
 
                 train_iter.reset();
                 test_iter.reset();

@@ -18,6 +18,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -33,23 +35,22 @@ public class StressyWithRR {
         RecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(new File(FilePath)));
 
-        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 10, 0, 4);
-        int idx = 0;
-        while (iter.hasNext()) {
-            iter.next();
-            idx++;
-        }
-        System.out.println(idx);
+        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1, 0, 4);
 
-        iter.reset();
+        System.out.println(iter);
+
         DataSet allData = iter.next();
-
-        SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.8);
-        DataSet trainData = testAndTrain.getTrain();
-        System.out.println(trainData.toString());
-        DataSet testData = testAndTrain.getTest();
-        System.out.println(testData.toString());
-
+        System.out.println(allData);
+        allData.shuffle();
+//
+//        SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.8);
+//        DataSet trainData = testAndTrain.getTrain();
+//        System.out.println(trainData.toString());
+//        DataSet testData = testAndTrain.getTest();
+//        System.out.println(testData.toString());
+//
+//        DataNormalization normalizer = new NormalizerStandardize();
+//
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Adam(0.001))
@@ -69,15 +70,21 @@ public class StressyWithRR {
         model.init();
         model.setListeners(new ScoreIterationListener(1000));
 
-        model.fit(trainData);
-
-        INDArray output = model.output(testData.getFeatures());
-
+        model.fit(iter, 1);
+//
+        iter.reset();
         Evaluation eval = new Evaluation(4);
-        eval.eval(testData.getLabels(), output);
 
+        while (iter.hasNext()) {
+            DataSet nextData = iter.next();
+            INDArray reshapedFeatures = nextData.getFeatures();
+            INDArray reshapedLabels = nextData.getLabels();
+            INDArray output = model.output(reshapedFeatures);
+            eval.eval(reshapedLabels, output);
+        }
+//
         System.out.println(eval.stats());
-
+//
         boolean saveUpdate = true;
         File locationToSave = new File("src/main/resources/stressy_model_nn_rr.zip");
         ModelSerializer.writeModel(model, locationToSave, saveUpdate);
