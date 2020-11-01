@@ -26,13 +26,18 @@ public class GetDataFixing {
                     String[] attributes = record[j].replace("[","").replace("]","").split(",");
 //                    System.out.println(attributes[5]);
                     for(int k = 0 ; k < 6; k++) {
-                        coroutine_array[j][k] = Double.parseDouble(attributes[j].trim());
-                        if (k == 5) {
-                            System.out.println(attributes[5] + " " + coroutine_array[j][5] + " " + coroutine_array[j][3] + " " + coroutine_array[j][4]);
-                        }
+                        coroutine_array[j][k] = Double.parseDouble(attributes[k].trim());
                     }
                 }
                 data_all[i] = coroutine_array;
+
+                //
+                for(double[] item: coroutine_array){
+                    for (double item2: item) {
+                        System.out.print(item2 + " ");
+                    }
+                    System.out.println("");
+                }
             }
         }catch (IOException e){
             e.printStackTrace();
