@@ -145,7 +145,8 @@ public class StressyWithRR2 {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
-                .updater(new Adam(0.001))
+                .updater(new Adam(0.0001))
+                .seed(1234)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(30).nOut(1024)
                         .activation(Activation.LEAKYRELU)
@@ -180,7 +181,7 @@ public class StressyWithRR2 {
             DataSetIterator train_iter = new RecordReaderDataSetIterator(rrTrain, 1, 0, 4);
             DataSetIterator test_iter = new RecordReaderDataSetIterator(rrTest, 1, 0, 4);
 
-            model.fit(train_iter, 10);
+            model.fit(train_iter, 100);
 
             System.out.println("Evaluate model....");
             Evaluation eval = new Evaluation(4);
