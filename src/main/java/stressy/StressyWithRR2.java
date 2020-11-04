@@ -177,7 +177,7 @@ public class StressyWithRR2 {
             DataSetIterator train_iter = new RecordReaderDataSetIterator(rrTrain, 1, 0, 4);
             DataSetIterator test_iter = new RecordReaderDataSetIterator(rrTest, 1, 0, 4);
 
-            model.fit(train_iter, 10);
+            model.fit(train_iter, 1000);
 
             System.out.println("Evaluate model....");
             Evaluation eval = new Evaluation(4);
