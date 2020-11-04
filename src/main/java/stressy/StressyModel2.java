@@ -165,7 +165,7 @@ public class StressyModel2 {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
-                .updater(new Adam(0.001))
+                .updater(new Adam(0.0001))
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(30).nOut(1024)
                         .activation(Activation.TANH)

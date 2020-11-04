@@ -4,6 +4,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -35,59 +36,68 @@ public class StressyWithRR {
         RecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(new File(FilePath)));
 
-        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1, 0, 4);
+        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 10, 0, 4);
 
         System.out.println(iter);
 
         DataSet allData = iter.next();
         System.out.println(allData);
         allData.shuffle();
-//
-//        SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.8);
-//        DataSet trainData = testAndTrain.getTrain();
-//        System.out.println(trainData.toString());
-//        DataSet testData = testAndTrain.getTest();
-//        System.out.println(testData.toString());
-//
-//        DataNormalization normalizer = new NormalizerStandardize();
-//
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .updater(new Adam(0.001))
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(30).nOut(1024)
-                        .activation(Activation.TANH)
-                        .build())
-                .layer(1, new DenseLayer.Builder().nIn(1024).nOut(512)
-                        .activation(Activation.LEAKYRELU)
-                        .build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(512).nOut(4).build())
-                .build();
 
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+//        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+//                .weightInit(WeightInit.XAVIER)
+//                .updater(new Adam(0.001))
+//                .list()
+//                .layer(0, new DenseLayer.Builder().nIn(30).nOut(1024)
+//                        .activation(Activation.LEAKYRELU)
+//                        .build())
+//                .layer(1, new DenseLayer.Builder().nIn(1024).nOut(512)
+//                        .activation(Activation.LEAKYRELU)
+//                        .build())
+//                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+//                        .activation(Activation.SOFTMAX)
+//                        .nIn(512).nOut(4).build())
+//                .build();
+
+        File locationToLoad = new File("src/main/resources/stressy_model_nn_rr.zip");
+        MultiLayerNetwork model = ModelSerializer.restoreMultiLayerNetwork(locationToLoad, false);
         model.init();
         model.setListeners(new ScoreIterationListener(1000));
 
-        model.fit(iter, 1);
-//
-        iter.reset();
         Evaluation eval = new Evaluation(4);
 
-        while (iter.hasNext()) {
-            DataSet nextData = iter.next();
-            INDArray reshapedFeatures = nextData.getFeatures();
-            INDArray reshapedLabels = nextData.getLabels();
-            INDArray output = model.output(reshapedFeatures);
-            eval.eval(reshapedLabels, output);
+        double last_accuracy = 0.34;
+
+        while (true) {
+            for (int i = 0; i < 10; i++) {
+
+                model.fit(iter);
+                iter.reset();
+
+                while (iter.hasNext()) {
+                    DataSet nextData = iter.next();
+                    INDArray reshapedFeatures = nextData.getFeatures();
+                    INDArray reshapedLabels = nextData.getLabels();
+                    INDArray output = model.output(reshapedFeatures);
+                    eval.eval(reshapedLabels, output);
+                }
+
+                System.out.println(eval.stats());
+
+            }
+
+            if (last_accuracy < eval.accuracy()) {
+                boolean saveUpdate = true;
+                File locationToSave = new File("src/main/resources/stressy_model_nn_rr.zip");
+                ModelSerializer.writeModel(model, locationToSave, saveUpdate);
+                last_accuracy = eval.accuracy();
+            }
+
+
+
         }
-//
-        System.out.println(eval.stats());
-//
-        boolean saveUpdate = true;
-        File locationToSave = new File("src/main/resources/stressy_model_nn_rr.zip");
-        ModelSerializer.writeModel(model, locationToSave, saveUpdate);
+
+
 
 
     }

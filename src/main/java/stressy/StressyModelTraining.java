@@ -134,7 +134,7 @@ public class StressyModelTraining {
             int train_idx = 0;
             int test_idx = 0;
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 1; i++) {
                 while (train_iter.hasNext()) {
                     DataSet nextData = train_iter.next();
                     INDArray reshapedFeatures = nextData.getFeatures().reshape(1, 30);
