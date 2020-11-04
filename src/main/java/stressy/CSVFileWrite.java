@@ -4,6 +4,8 @@ import au.com.bytecode.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class CSVFileWrite {
 
@@ -75,6 +77,14 @@ public class CSVFileWrite {
 
         double[][][] featureArr = getData();
         double[][] labelArr = getLabel();
+
+        ArrayList<Integer> random_index = new ArrayList();
+
+        for (int i = 0; i < 4014; i++) {
+            random_index.add(i);
+        }
+
+        Collections.shuffle(random_index);
 
         CSVWriter all_writer = new CSVWriter(new FileWriter("src/main/resources/stressy_data.csv"));
 
