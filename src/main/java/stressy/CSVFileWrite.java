@@ -76,7 +76,10 @@ public class CSVFileWrite {
         double[][][] featureArr = getData();
         double[][] labelArr = getLabel();
 
-        CSVWriter writer = new CSVWriter(new FileWriter("src/main/resources/stressy_data.csv"));
+        CSVWriter all_writer = new CSVWriter(new FileWriter("src/main/resources/stressy_data.csv"));
+
+        CSVWriter train_writer = new CSVWriter(new FileWriter("src/main/resources/stressy_train_data.csv"));
+        CSVWriter test_writer = new CSVWriter(new FileWriter("src/main/resources/stressy_test_data.csv"));
 
         for (int i = 0; i < 4014; i++) {
             String[] write_string = new String[31];
@@ -87,10 +90,37 @@ public class CSVFileWrite {
                     write_string[idx++] = String.valueOf(featureArr[i][j][k]);
                 }
             }
-            writer.writeNext(write_string);
+            all_writer.writeNext(write_string);
         }
 
-        writer.close();
+        int trainSplit = (int)(4014 * 0.8);
+
+        for (int i = 0; i < trainSplit; i++) {
+            String[] write_string = new String[31];
+            int idx = 1;
+            write_string[0] = String.valueOf(where_is_data[i]);
+            for (int j = 0; j < 5; j++) {
+                for (int k = 0; k < 6; k++) {
+                    write_string[idx++] = String.valueOf(featureArr[i][j][k]);
+                }
+            }
+            train_writer.writeNext(write_string);
+        }
+
+        for (int i = trainSplit; i < 4014; i++) {
+            String[] write_string = new String[31];
+            int idx = 1;
+            write_string[0] = String.valueOf(where_is_data[i]);
+            for (int j = 0; j < 5; j++) {
+                for (int k = 0; k < 6; k++) {
+                    write_string[idx++] = String.valueOf(featureArr[i][j][k]);
+                }
+            }
+            test_writer.writeNext(write_string);
+        }
+
+        train_writer.close();
+        test_writer.close();
 
     }
 
