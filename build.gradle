@@ -16,4 +16,5 @@ dependencies {
     implementation "org.slf4j:slf4j-simple:1.7.25"
     implementation "org.slf4j:slf4j-api:1.7.25"
     implementation group: 'com.opencsv', name: 'opencsv', version: '4.4'
+    implementation 'org.json:json:20190722'
 }
